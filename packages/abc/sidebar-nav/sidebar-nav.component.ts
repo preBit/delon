@@ -1,3 +1,4 @@
+import { DomSanitizer } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -52,10 +53,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     return this.settings.layout.collapsed;
   }
 
-  private get _d() {
-    return this.menuSrv.menus;
-  }
-
   constructor(
     private menuSrv: MenuService,
     private settings: SettingsService,
@@ -63,14 +60,20 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     private render: Renderer2,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
+    private sanitizer: DomSanitizer,
     @Inject(DOCUMENT) private doc: any,
     @Inject(WINDOW) private win: Window,
   ) {}
 
+  private getLinkNode(node: HTMLElement): HTMLElement | null {
+    node = node.nodeName === 'A' ? node : (node.parentNode as HTMLElement);
+    return node.nodeName !== 'A' ? null : node;
+  }
+
   private floatingAreaClickHandle(e: MouseEvent) {
     e.stopPropagation();
-    const linkNode = e.target as HTMLElement;
-    if (linkNode.nodeName !== 'A') {
+    const linkNode = this.getLinkNode(e.target as HTMLElement);
+    if (linkNode == null) {
       return false;
     }
     const id = +linkNode.dataset!.id!;
@@ -80,7 +83,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     }
 
     let item: Nav;
-    this.menuSrv.visit(this._d, i => {
+    this.menuSrv.visit(this.list, i => {
       if (!item && i.__id === id) {
         item = i;
       }
@@ -149,7 +152,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     node.style.left = `${rect.right + 5}px`;
   }
 
-  showSubMenu(e: MouseEvent, item: Nav) {
+  showSubMenu(e: MouseEvent, item: Nav): void {
     if (this.collapsed !== true) {
       return;
     }
@@ -164,7 +167,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     });
   }
 
-  to(item: Menu) {
+  to(item: Menu): void {
     this.select.emit(item);
     if (item.disabled) return;
 
@@ -174,14 +177,14 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       } else {
         this.win.location.href = item.externalLink;
       }
-      return false;
+      return;
     }
     this.ngZone.run(() => this.router.navigateByUrl(item.link!));
   }
 
-  toggleOpen(item: Nav) {
+  toggleOpen(item: Nav): void {
     if (!this.openStrictly) {
-      this.menuSrv.visit(this._d, i => {
+      this.menuSrv.visit(this.list, i => {
         if (i !== item) i._open = false;
       });
       let pItem = item.__parent;
@@ -194,24 +197,47 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  _click() {
+  _click(): void {
     if (this.isPad && this.collapsed) {
       this.openAside(false);
       this.hideAll();
     }
   }
 
-  _docClick() {
-    this.hideAll();
+  _docClick(): void {
+    if (this.collapsed) {
+      this.hideAll();
+    }
   }
 
-  ngOnInit() {
+  private openedByUrl(url: string | null) {
+    const { menuSrv, recursivePath, openStrictly } = this;
+    let findItem = menuSrv.getHit(this.menuSrv.menus, url!, recursivePath, i => {
+      i._selected = false;
+      if (!openStrictly) {
+        i._open = false;
+      }
+    });
+    if (findItem == null) return;
+
+    do {
+      findItem._selected = true;
+      if (!openStrictly) {
+        findItem._open = true;
+      }
+      findItem = findItem.__parent;
+    } while (findItem);
+  }
+
+  ngOnInit(): void {
     const { doc, router, unsubscribe$, menuSrv, cdr } = this;
     this.bodyEl = doc.querySelector('body');
-    menuSrv.openedByUrl(router.url, this.recursivePath);
+    this.openedByUrl(router.url);
     this.ngZone.runOutsideAngular(() => this.genFloatingContainer());
     menuSrv.change.pipe(takeUntil(unsubscribe$)).subscribe(data => {
-      menuSrv.visit(data, (i: Nav) => {
+      menuSrv.visit(data, (i: Nav, _p, depth) => {
+        i._text = this.sanitizer.bypassSecurityTrustHtml(i.text!);
+        i._needIcon = depth! <= 1;
         if (!i._aclResult) {
           if (this.disabledAcl) {
             i.disabled = true;
@@ -228,7 +254,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     });
     router.events.pipe(takeUntil(unsubscribe$)).subscribe(e => {
       if (e instanceof NavigationEnd) {
-        this.menuSrv.openedByUrl(e.urlAfterRedirects, this.recursivePath);
+        this.openedByUrl(e.urlAfterRedirects);
         this.underPad();
         this.cdr.detectChanges();
       }

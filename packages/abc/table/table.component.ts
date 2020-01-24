@@ -61,7 +61,7 @@ import {
   STWidthMode,
   STResetColumnsOption,
 } from './table.interfaces';
-import { NzTableComponent } from 'ng-zorro-antd';
+import { NzTableComponent } from 'ng-zorro-antd/table';
 
 @Component({
   selector: 'st',
@@ -73,7 +73,21 @@ import { NzTableComponent } from 'ng-zorro-antd';
   encapsulation: ViewEncapsulation.None,
 })
 export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
+  private unsubscribe$ = new Subject<void>();
+  private data$: Subscription;
+  private totalTpl = ``;
+  private clonePage: STPage;
+  private copyCog: STConfig;
+  locale: LocaleData = {};
+  _data: STData[] = [];
+  _statistical: STStatisticalResults = {};
+  _isPagination = true;
+  _allChecked = false;
+  _allCheckedDisabled = false;
+  _indeterminate = false;
+  _columns: STColumn[] = [];
   @ViewChild('table', { static: false }) orgTable: NzTableComponent;
+
   /** 请求体配置 */
   @Input()
   get req() {
@@ -134,65 +148,10 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
     return this._widthMode;
   }
 
-  // #endregion
-
-  constructor(
-    @Optional() @Inject(ALAIN_I18N_TOKEN) i18nSrv: AlainI18NService,
-    private cdr: ChangeDetectorRef,
-    private cog: STConfig,
-    private router: Router,
-    private el: ElementRef,
-    private renderer: Renderer2,
-    private exportSrv: STExport,
-    private modalHelper: ModalHelper,
-    private drawerHelper: DrawerHelper,
-    @Inject(DOCUMENT) private doc: any,
-    private columnSource: STColumnSource,
-    private dataSource: STDataSource,
-    private delonI18n: DelonLocaleService,
-  ) {
-    this.delonI18n.change.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {
-      this.locale = this.delonI18n.getData('st');
-      if (this._columns.length > 0) {
-        this.page = this.clonePage;
-        this.cd();
-      }
-    });
-
-    this.copyCog = deepMergeKey(new STConfig(), true, cog);
-    delete this.copyCog.multiSort;
-    Object.assign(this, this.copyCog);
-    if (cog.multiSort && cog.multiSort.global !== false) {
-      this.multiSort = { ...cog.multiSort };
-    }
-
-    i18nSrv.change
-      .pipe(
-        takeUntil(this.unsubscribe$),
-        filter(() => this._columns.length > 0),
-      )
-      .subscribe(() => this.refreshColumns());
-  }
-
   private get routerState() {
     const { pi, ps, total } = this;
     return { pi, ps, total };
   }
-  private unsubscribe$ = new Subject<void>();
-  private data$: Subscription;
-  private totalTpl = ``;
-  private clonePage: STPage;
-  private copyCog: STConfig;
-  locale: LocaleData = {};
-  _data: STData[] = [];
-  _statistical: STStatisticalResults = {};
-  _isPagination = true;
-  _allChecked = false;
-  _allCheckedDisabled = false;
-  _indeterminate = false;
-  _columns: STColumn[] = [];
-
-  // #region fields
 
   @Input() data: string | STData[] | Observable<STData[]>;
   private _req: STReq;
@@ -252,7 +211,59 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
    */
   @Output() readonly change = new EventEmitter<STChange>();
 
+  /**
+   * Get the number of the current page
+   */
+  get count(): number {
+    return this._data.length;
+  }
+
+  /**
+   * Get the data of the current page
+   */
+  get list(): STData[] {
+    return this._data;
+  }
+
   private rowClickCount = 0;
+
+  constructor(
+    @Optional() @Inject(ALAIN_I18N_TOKEN) i18nSrv: AlainI18NService,
+    private cdr: ChangeDetectorRef,
+    private cog: STConfig,
+    private router: Router,
+    private el: ElementRef,
+    private renderer: Renderer2,
+    private exportSrv: STExport,
+    private modalHelper: ModalHelper,
+    private drawerHelper: DrawerHelper,
+    @Inject(DOCUMENT) private doc: any,
+    private columnSource: STColumnSource,
+    private dataSource: STDataSource,
+    private delonI18n: DelonLocaleService,
+  ) {
+    this.delonI18n.change.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {
+      this.locale = this.delonI18n.getData('st');
+      if (this._columns.length > 0) {
+        this.page = this.clonePage;
+        this.cd();
+      }
+    });
+
+    this.copyCog = deepMergeKey(new STConfig(), true, cog);
+    delete this.copyCog.multiSort;
+    Object.assign(this, this.copyCog);
+    if (cog.multiSort && cog.multiSort.global !== false) {
+      this.multiSort = { ...cog.multiSort };
+    }
+
+    i18nSrv.change
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        filter(() => this._columns.length > 0),
+      )
+      .subscribe(() => this.refreshColumns());
+  }
 
   cd() {
     this.cdr.detectChanges();
@@ -330,7 +341,10 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
           ...options,
         })
         .pipe(takeUntil(this.unsubscribe$))
-        .subscribe(result => resolvePromise(result), error => rejectPromise(error));
+        .subscribe(
+          result => resolvePromise(result),
+          error => rejectPromise(error),
+        );
     });
   }
 
@@ -353,6 +367,7 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
       }
       this._data = result.list as STData[];
       this._statistical = result.statistical as STStatisticalResults;
+      this.changeEmit('loaded', result.list);
       return this._refCheck();
     } catch (error) {
       this.setLoading(false);
@@ -477,17 +492,27 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.changeEmit('expand', item);
   }
 
-  /** 移除某行数据 */
-  removeRow(data: STData | STData[]) {
-    if (!Array.isArray(data)) {
-      data = [data];
+  /**
+   * Remove a row in the table, like this:
+   *
+   * ```
+   * this.st.removeRow(0)
+   * this.st.removeRow(stDataItem)
+   * ```
+   */
+  removeRow(data: STData | STData[] | number) {
+    if (typeof data === 'number') {
+      this._data.splice(data, 1);
+    } else {
+      if (!Array.isArray(data)) {
+        data = [data];
+      }
+
+      (data as STData[])
+        .map(item => this._data.indexOf(item))
+        .filter(pos => pos !== -1)
+        .forEach(pos => this._data.splice(pos, 1));
     }
-
-    (data as STData[])
-      .map(item => this._data.indexOf(item))
-      .filter(pos => pos !== -1)
-      .forEach(pos => this._data.splice(pos, 1));
-
     // recalculate no
     this._columns
       .filter(w => w.type === 'no')
@@ -496,16 +521,31 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
     return this.cd();
   }
 
+  /**
+   * Sets the row value for the `index` in the table, like this:
+   *
+   * ```
+   * this.st.setRow(0, { price: 100 })
+   * this.st.setRow(0, { price: 100, name: 'asdf' })
+   * ```
+   */
+  setRow(index: number, item: STData): this {
+    this._data[index] = deepMergeKey(this._data[index], false, item);
+    this._data = this.dataSource.optimizeData({ columns: this._columns, result: this._data, rowClassName: this.rowClassName });
+    this.cdr.detectChanges();
+    return this;
+  }
+
   // #endregion
 
   // #region sort
 
   sort(col: STColumn, idx: number, value: any) {
     if (this.multiSort) {
-      col._sort.default = value;
-      col._sort.tick = this.dataSource.nextSortTick;
+      col._sort!.default = value;
+      col._sort!.tick = this.dataSource.nextSortTick;
     } else {
-      this._columns.forEach((item, index) => (item._sort.default = index === idx ? value : null));
+      this._columns.forEach((item, index) => (item._sort!.default = index === idx ? value : null));
     }
     this.loadPageData();
     const res = {
@@ -517,7 +557,7 @@ export class STComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   clearSort() {
-    this._columns.forEach(item => (item._sort.default = null));
+    this._columns.forEach(item => (item._sort!.default = null));
     return this;
   }
 

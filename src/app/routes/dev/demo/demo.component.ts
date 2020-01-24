@@ -1,8 +1,11 @@
 import { Component } from '@angular/core';
-import { SFSchema } from '@delon/form';
-import { NzMessageService } from 'ng-zorro-antd';
+import { SFSchema, SFMentionWidgetSchema } from '@delon/form';
+import { MentionOnSearchTypes } from 'ng-zorro-antd/mention';
+import { NzMessageService } from 'ng-zorro-antd/message';
 import { of } from 'rxjs';
 import { delay } from 'rxjs/operators';
+
+const DATA = ['asdf', 'cipchk', '中文', 'にほんご'];
 
 @Component({
   selector: 'app-demo',
@@ -13,27 +16,34 @@ import { delay } from 'rxjs/operators';
 export class DemoComponent {
   schema: SFSchema = {
     properties: {
-      btn: {
+      remark: {
         type: 'string',
-        title: 'Button',
-        enum: ['A', 'B', 'C'],
+        title: '描述',
+        enum: DATA,
+        minimum: 2,
+        maximum: 5,
         ui: {
-          widget: 'radio',
-          styleType: 'button',
-          buttonStyle: 'solid',
-        },
-        default: 'A',
+          widget: 'mention',
+          inputStyle: 'textarea',
+        } as SFMentionWidgetSchema,
       },
-      // 异步数据
+      // 异步静态数据源
       async: {
         type: 'string',
         title: 'Async',
         ui: {
-          widget: 'radio',
-          asyncData: () => of([{ label: '男', value: 'M' }, { label: '女', value: 'F' }, { label: '未知', value: 'N' }]).pipe(delay(100)),
-          change: console.log,
-        },
-        default: 'N',
+          widget: 'mention',
+          asynxcData: () => of(DATA).pipe(delay(1000)),
+        } as SFMentionWidgetSchema,
+      },
+      // 实时数据
+      real_time: {
+        type: 'string',
+        title: 'RealTime',
+        ui: {
+          widget: 'mention',
+          loadData: (option: MentionOnSearchTypes) => of(DATA.filter(item => item.indexOf(option.value) !== -1)).pipe(delay(300)),
+        } as SFMentionWidgetSchema,
       },
     },
   };

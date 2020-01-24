@@ -81,12 +81,15 @@ Property | Description | Type | Default
 
 Name | Description
 ---- | -----------
-`filteredData` | Get all data after filtering & sorting<br>- Local data: including sorting, filtering<br>- Remote data: Don't pass `pi`, `ps` parameters in http request
+`[filteredData]` | Get all data after filtering & sorting<br>- Local data: including sorting, filtering<br>- Remote data: Don't pass `pi`, `ps` parameters in http request
+`[count]` | Get the number of the current page
+`[list]` | Get the data of the current page
 `resetColumns(options?: STResetColumnsOption)` | Reset columns
 `load(pi = 1, extraParams?: any, options?: STLoadOptions)` | Load specified page
 `reload(extraParams?: any, options?: STLoadOptions)` | Refresh current page
 `reset(extraParams?: any, options?: STLoadOptions)` | Reset data and `pi` to `1`, including single multi-select, sort, filter status (Covered default state)
-`removeRow(data: STData | STData[])` | Remove row
+`removeRow(data: STData | STData[] | number)` | Remove a row in the table
+`setRow(index: number, item: STData)` | Sets the row value for the `index` in the table
 `clear(cleanStatus = true)` | Clear all data
 `clearStatus()` | Clean all status (like this: single multi-select, sort, filter status)
 `clearCheck()` | Clear all `checkbox`
@@ -166,11 +169,13 @@ Property | Description | Type | Default
 `[pi]` | Page index | `number` | -
 `[ps]` | Page size | `number` | -
 `[total]` | Total data | `number` | -
+`[loaded]` | Parameters of type `loaded` | `STData[]` | -
 `[checkbox]` | Parameters of type `checkbox` | `STData[]` | -
 `[radio]` | Parameters of type `radio` | `STData` | -
 `[sort]` | Parameters of type `sort` | `STChangeSort` | -
 `[filter]` | Parameters of type `filter` | `STColumn` | -
-`[click]` | Parameters of type `click` or `dblClick` | `STChangeRowClick` | -
+`[click]` | Parameters of type `click` | `STChangeRowClick` | -
+`[dblClick]` | Parameters of type `dblClick` | `STChangeRowClick` | -
 `[expand]` | Parameters of type `expand` | `STData` | -
 
 ### STChangeSort
@@ -212,6 +217,7 @@ Property | Description | Type | Default
 `[separator]` | Separator between attributes | `string` | `-`
 `[nameSeparator]` | Column name and state separator | `string` | `.`
 `[global]` | Whether global multi sort mode<br>`true` all `st` defaults multi-sort<br>`false` all `st` non-multiple sorting, just only configurable for rule | `boolean` | `true`
+`[keepEmptyKey]` | Whether to keep send empty key<br>`true` send the `key` name anyway<br>`false` don't send `key` when not sorting | `boolean` | `true`
 
 ### STData
 

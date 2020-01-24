@@ -55,9 +55,9 @@ config: SEConfig
 `[col]` | 指定表单元素最多分几列展示，最终一行几列由 col 配置结合[响应式规则](/theme/responsive)决定（继承于 `se-container`） | `'1','2','3','4','5','6'` | -
 `[label]` | 标签文本 | `string,TemplateRef<void>` | -
 `[labelWidth]` | 标签文本宽度，单位：`px`（继承于 `se-container`） | `number` | -
-`[optional]` | 标签可选信息 | `string` | -
-`[optionalHelp]` | 标签可选帮助 | `string` | -
-`[error]` | 错误描述 | `string` | -
+`[optional]` | 标签可选信息 | `string, TemplateRef<void>` | -
+`[optionalHelp]` | 标签可选帮助 | `string, TemplateRef<void>` | -
+`[error]` | 错误描述 | `string, { [key: string]: string }` | -
 `[extra]` | 额外提示信息 | `string` | -
 `[required]` | 是否必填项标识符 | `string` | -
 `[controlClass]` | 控件区域样式名 | `string` | -

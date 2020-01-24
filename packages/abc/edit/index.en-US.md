@@ -55,9 +55,9 @@ Property | Description | Type | Default
 `[col]` | specify the maximum number of columns to display, the final columns number is determined by col setting combined with [Responsive Rules](/theme/responsive) (Inherited from `se-container`) | `'1','2','3','4','5','6'` | -
 `[label]` | Label | `string,TemplateRef<void>` | -
 `[labelWidth]` | label text of width, unit is `px` (Inherited from `se-container`) | `number` | -
-`[optional]` | Label optional information | `string` | -
-`[optionalHelp]` | Label optional help | `string` | -
-`[error]` | validation error message | `string` | -
+`[optional]` | Label optional information | `string, TemplateRef<void>` | -
+`[optionalHelp]` | Label optional help | `string, TemplateRef<void>` | -
+`[error]` | validation error message | `string, { [key: string]: string }` | -
 `[extra]` | The extra prompt message. It is similar to help. | `string` | -
 `[required]` | whether required identifier | `string` | -
 `[controlClass]` | Control area classes | `string` | -

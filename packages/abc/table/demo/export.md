@@ -15,7 +15,7 @@ Save the table data as Excel.
 
 ```ts
 import { Component, ViewChild } from '@angular/core';
-import { STColumn, STComponent } from '@delon/abc';
+import { STColumn, STComponent } from '@delon/abc/table';
 
 @Component({
   selector: 'app-demo',
@@ -47,7 +47,7 @@ export class DemoComponent {
     {
       title: '头像',
       type: 'img',
-      width: '50px',
+      width: 60,
       index: 'picture.thumbnail',
       exported: false,
     },

@@ -16,7 +16,7 @@ Simplest of usage.
 ```ts
 import { Component } from '@angular/core';
 import { Menu, MenuService, SettingsService } from '@delon/theme';
-import { NzIconService } from 'ng-zorro-antd';
+import { NzIconService } from 'ng-zorro-antd/icon';
 
 @Component({
   selector: 'app-demo',
@@ -37,7 +37,7 @@ export class DemoComponent {
       group: true,
       children: [
         {
-          text: 'Dashboard',
+          text: 'Dashboard <strong>HTML</strong>',
           // Support icon by https://ng.ant.design/components/icon/zh
           // Format: `anticon-{icon key}`
           icon: 'anticon-dashboard',

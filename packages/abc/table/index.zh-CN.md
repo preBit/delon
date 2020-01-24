@@ -81,12 +81,15 @@ config: STConfig
 
 名称 | 说明
 --- | -----
-`filteredData` | 获取过滤后所有数据<br>- 本地数据：包含排序、过滤后不分页数据<br>- 远程数据：不传递 `pi`、`ps` 两个参数
+`[filteredData]` | 获取过滤后所有数据<br>- 本地数据：包含排序、过滤后不分页数据<br>- 远程数据：不传递 `pi`、`ps` 两个参数
+`[count]` | 获取当前页的条目数
+`[list]` | 获取当前页的数据列表
 `resetColumns(options?: STResetColumnsOption)` | 重置列描述
 `load(pi = 1, extraParams?: any, options?: STLoadOptions)` | 加载指定页
 `reload(extraParams?: any, options?: STLoadOptions)` | 刷新当前页
 `reset(extraParams?: any, options?: STLoadOptions)` | 重置且重新设置 `pi` 为 `1`，包含单多选、排序、过滤状态（同默认状态一并清除）
-`removeRow(data: STData | STData[])` | 移除行
+`removeRow(data: STData | STData[] | number)` | 移除行
+`setRow(index: number, item: STData)` | 修改行数据，支持部分字段更新
 `clear(cleanStatus = true)` | 清空所有数据
 `clearStatus()` | 清空所有状态（包含单多选、排序、过滤状态）
 `clearCheck()` | 清除所有 `checkbox`
@@ -162,15 +165,17 @@ class TestComponent {
 
 参数 | 说明 | 类型 | 默认值
 ----|------|-----|------
-`[type]` | 变更类型，包括：`pi`、`ps`、`checkbox`、`radio`、`sort`、`filter`、`click`、`dblClick`、`expand` | `STChangeType` | -
+`[type]` | 变更类型，包括：`loaded`、`pi`、`ps`、`checkbox`、`radio`、`sort`、`filter`、`click`、`dblClick`、`expand` | `STChangeType` | -
 `[pi]` | 当前页码 | `number` | -
 `[ps]` | 每页数量 | `number` | -
 `[total]` | 数据总量 | `number` | -
+`[loaded]` | `loaded` 参数 | `STData[]` | -
 `[checkbox]` | `checkbox` 参数 | `STData[]` | -
 `[radio]` | `radio` 参数 | `STData` | -
 `[sort]` | 排序参数 | `STChangeSort` | -
 `[filter]` | 过滤参数 | `STColumn` | -
-`[click]` | 行点击或双击参数 | `STChangeRowClick` | -
+`[click]` | 行点击参数 | `STChangeRowClick` | -
+`[dblClick]` | 行双击参数 | `STChangeRowClick` | -
 `[expand]` | `expand` 参数 | `STData` | -
 
 ### STChangeSort
@@ -205,6 +210,7 @@ class TestComponent {
 `[separator]` | 不同属性间分隔符 | `string` | `-`
 `[nameSeparator]` | 列名与状态间分隔符 | `string` | `.`
 `[global]` | 是否全局多排序模式<br>`true` 表示所有 `st` 默认为多排序<br>`false` 表示需要为每个 `st` 添加 `multiSort` 才会视为多排序模式 | `boolean` | `true`
+`[keepEmptyKey]` | 是否保持空值的键名<br>`true` 表示不管是否有排序都会发送 `key` 键名<br>`false` 表示无排序动作时不会发送 `key` 键名 | `boolean` | `true`
 
 ### STData
 

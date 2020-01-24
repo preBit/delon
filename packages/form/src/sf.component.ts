@@ -55,6 +55,7 @@ export function useFactory(schemaValidatorFactory: SchemaValidatorFactory, optio
     '[class.sf__search]': `mode === 'search'`,
     '[class.sf__edit]': `mode === 'edit'`,
     '[class.sf__no-error]': `onlyVisual`,
+    '[class.sf__no-colon]': `noColon`,
   },
   preserveWhitespaces: false,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -136,6 +137,8 @@ export class SFComponent implements OnInit, OnChanges, OnDestroy {
    */
   @Input() @InputBoolean() loading = false;
   @Input() @InputBoolean() disabled = false;
+  @Input() @InputBoolean() noColon = false;
+  @Input() @InputBoolean() cleanValue = false;
   /** 数据变更时回调 */
   @Output() readonly formChange = new EventEmitter<{}>();
   /** 提交表单时回调 */
@@ -335,12 +338,17 @@ export class SFComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         if (property.items) {
-          uiRes[uiKey].$items = uiRes[uiKey].$items || {};
-          inFn(property.items, property.items, (uiSchema[uiKey] || {}).$items || {}, ui, uiRes[uiKey].$items);
+          const uiSchemaInArr = (uiSchema[uiKey] || {}).$items || {};
+          ui.$items = {
+            ...(property.items.ui as SFUISchemaItem),
+            ...uiSchemaInArr[uiKey],
+            ...ui.$items,
+          };
+          inFn(property.items, property.items, uiSchemaInArr, ui.$items, ui.$items);
         }
 
         if (property.properties && Object.keys(property.properties).length) {
-          inFn(property, schema, uiSchema[uiKey] || {}, ui, uiRes[uiKey]);
+          inFn(property, schema, uiSchema[uiKey] || {}, ui, ui);
         }
       });
     };
@@ -505,7 +513,7 @@ export class SFComponent implements OnInit, OnChanges, OnDestroy {
 
     let isFirst = true;
     this.rootProperty.valueChanges.subscribe(value => {
-      this._item = { ...this.formData, ...value };
+      this._item = { ...(this.cleanValue ? null : this.formData), ...value };
       if (isFirst) {
         isFirst = false;
         return;

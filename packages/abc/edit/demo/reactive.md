@@ -16,13 +16,13 @@ Support for reactive forms.
 ```ts
 import { Component } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { NzMessageService } from 'ng-zorro-antd';
+import { NzMessageService } from 'ng-zorro-antd/message';
 
 @Component({
   selector: 'app-demo',
   template: `
   <form nz-form [formGroup]="validateForm" (ngSubmit)="submitForm()" se-container gutter="32">
-    <se label="App Key" error="Please input your username!">
+    <se label="App Key" [error]="{ required: 'Please input your username!', pattern: 'Incorrect format, muse be A' }">
       <input formControlName="userName" nz-input placeholder="Username">
     </se>
     <se label="App Secret" error="Please input your Password!">
@@ -37,7 +37,7 @@ export class DemoComponent {
   validateForm: FormGroup;
   constructor(fb: FormBuilder, private msg: NzMessageService) {
     this.validateForm = fb.group({
-      userName: [null, [Validators.required]],
+      userName: [null, [Validators.required, Validators.pattern(/A/)]],
       password: [null, [Validators.required]],
       remember: [true],
     });

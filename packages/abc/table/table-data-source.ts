@@ -6,7 +6,6 @@ import { deepCopy, deepGet } from '@delon/util';
 import { of, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { STSortMap } from './table-column-source';
 import {
   STColumn,
   STData,
@@ -23,6 +22,7 @@ import {
   STStatisticalResults,
   STStatisticalType,
   STColumnFilter,
+  STSortMap,
 } from './table.interfaces';
 
 export interface STDataSourceOptions {
@@ -159,18 +159,7 @@ export class STDataSource {
       data$ = data$.pipe(map(result => res.process!(result, rawData)));
     }
 
-    // data accelerator
-    data$ = data$.pipe(
-      map(result => {
-        for (let i = 0, len = result.length; i < len; i++) {
-          result[i]._values = columns.map(c => this.get(result[i], c, i));
-          if (options.rowClassName) {
-            result[i]._rowClassName = options.rowClassName(result[i], i);
-          }
-        }
-        return result;
-      }),
-    );
+    data$ = data$.pipe(map(result => this.optimizeData({ result, columns, rowClassName: options.rowClassName })));
 
     return data$.pipe(
       map(result => {
@@ -217,7 +206,7 @@ export class STDataSource {
         text = this.currentyPipe.transform(value);
         break;
       case 'date':
-        text = this.datePipe.transform(value, col.dateFormat);
+        text = value === col.default ? col.default : this.datePipe.transform(value, col.dateFormat);
         break;
       case 'yn':
         text = this.ynPipe.transform(value === col.yn!.truth, col.yn!.yes!, col.yn!.no!, col.yn!.mode!);
@@ -279,6 +268,17 @@ export class STDataSource {
     return this.http.request(method, url, reqOptions);
   }
 
+  optimizeData(options: { columns: STColumn[]; result: STData[]; rowClassName?: STRowClassName }): STData[] {
+    const { result, columns, rowClassName } = options;
+    for (let i = 0, len = result.length; i < len; i++) {
+      result[i]._values = columns.map(c => this.get(result[i], c, i));
+      if (rowClassName) {
+        result[i]._rowClassName = rowClassName(result[i], i);
+      }
+    }
+    return result;
+  }
+
   getNoIndex(item: STData, col: STColumn, idx: number): number {
     return typeof col.noIndex === 'function' ? col.noIndex(item, col, idx) : col.noIndex! + idx;
   }
@@ -286,7 +286,7 @@ export class STDataSource {
   // #region sort
 
   private getValidSort(columns: STColumn[]): STSortMap[] {
-    return columns.filter(item => item._sort && item._sort.enabled && item._sort.default).map(item => item._sort);
+    return columns.filter(item => item._sort && item._sort.enabled && item._sort.default).map(item => item._sort!);
   }
 
   private getSorterFn(columns: STColumn[]) {
@@ -339,6 +339,9 @@ export class STDataSource {
           .map(item => item.key + ms.nameSeparator + ((item.reName || {})[item.default!] || item.default))
           .join(ms.separator),
       };
+      if (multiSort.keepEmptyKey === false && ret[ms.key].length === 0) {
+        ret = {};
+      }
     } else {
       const mapData = sortList[0];
       let sortFiled = mapData.key;

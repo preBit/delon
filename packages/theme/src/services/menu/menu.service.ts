@@ -7,6 +7,9 @@ import { ACLService } from '@delon/acl';
 import { AlainI18NService, ALAIN_I18N_TOKEN } from '../i18n/i18n';
 import { Menu, MenuIcon } from './interface';
 
+/**
+ * 菜单服务，[在线文档](https://ng-alain.com/theme/menu)
+ */
 @Injectable({ providedIn: 'root' })
 export class MenuService implements OnDestroy {
   private _change$: BehaviorSubject<Menu[]> = new BehaviorSubject<Menu[]>([]);
@@ -238,6 +241,33 @@ export class MenuService implements OnDestroy {
     } while (item);
 
     return ret;
+  }
+
+  /**
+   * Get menu based on `key`
+   */
+  getItem(key: string): Menu | null {
+    let res: Menu | null = null;
+    this.visit(this.data, (item) => {
+      if (res == null && item.key === key) {
+        res = item;
+      }
+    });
+    return res;
+  }
+
+  /**
+   * Set menu based on `key`
+   */
+  setItem(key: string, value: Menu): void {
+    const item = this.getItem(key);
+    if (item == null) return;
+
+    Object.keys(value).forEach(k => {
+      item[k] = value[k];
+    });
+
+    this._change$.next(this.data);
   }
 
   ngOnDestroy(): void {

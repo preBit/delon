@@ -11,7 +11,9 @@ import { of, Observable, Subject } from 'rxjs';
 
 import { en_US, ALAIN_I18N_TOKEN, DatePipe, DelonLocaleModule, DelonLocaleService, DrawerHelper, ModalHelper } from '@delon/theme';
 import { deepCopy, deepGet } from '@delon/util';
-import { NgZorroAntdModule, NzPaginationComponent } from 'ng-zorro-antd';
+import { NzPaginationComponent } from 'ng-zorro-antd/pagination';
+import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 
 import { configureTestSuite, dispatchDropDown } from '@delon/testing';
 import { AlainI18NService, AlainI18NServiceFake } from '../../../theme/src/services/i18n/i18n';
@@ -32,6 +34,7 @@ import {
   STResReNameType,
   STWidthMode,
   STColumnTitle,
+  STChangeType,
 } from '../table.interfaces';
 import { STModule } from '../table.module';
 
@@ -96,7 +99,8 @@ describe('abc: table', () => {
       FormsModule,
       HttpClientTestingModule,
       RouterTestingModule.withRoutes([]),
-      NgZorroAntdModule,
+      NzModalModule,
+      NzDrawerModule,
       STModule,
       DelonLocaleModule,
     ];
@@ -1061,6 +1065,7 @@ describe('abc: table', () => {
         fixture.detectChanges();
         fixture.whenStable().then(() => {
           page.expectElCount(`.ant-table-rep`, 0);
+          page.expectElCount(`.ant-table-rep__title`, 0);
           done();
         });
       });
@@ -1128,10 +1133,8 @@ describe('abc: table', () => {
         fixture.whenStable().then(() => {
           const el = page.getCell(1, 1).querySelector('.ant-table-row-expand-icon') as HTMLElement;
           page.expectData(1, 'expand', undefined);
-          expect(context.change).not.toHaveBeenCalled();
           el.click();
-          page.expectData(1, 'expand', true);
-          expect(context.change).toHaveBeenCalled();
+          page.expectData(1, 'expand', true).expectChangeType('expand');
           done();
         });
       });
@@ -1142,10 +1145,8 @@ describe('abc: table', () => {
           fixture.whenStable().then(() => {
             const el = page.getCell(1, 2);
             page.expectData(1, 'expand', undefined);
-            expect(context.change).not.toHaveBeenCalled();
             el.click();
-            page.expectData(1, 'expand', true);
-            expect(context.change).toHaveBeenCalled();
+            page.expectData(1, 'expand', true).expectChangeType('expand');
             done();
           });
         });
@@ -1214,9 +1215,8 @@ describe('abc: table', () => {
           fixture.detectChanges();
           fixture.whenStable().then(() => {
             page.expectElCount('.ant-table-row-expand-icon', 0);
-            expect(context.change).not.toHaveBeenCalled();
             page.getCell(1, 2).click();
-            expect(context.change).not.toHaveBeenCalled();
+            page.expectChangeType('expand', false);
             done();
           });
         });
@@ -1233,7 +1233,10 @@ describe('abc: table', () => {
               index: 'i',
               filter: {
                 multiple: true,
-                menus: [{ text: 'f1', value: 'fv1' }, { text: 'f2', value: 'fv2' }],
+                menus: [
+                  { text: 'f1', value: 'fv1' },
+                  { text: 'f2', value: 'fv2' },
+                ],
                 confirmText: 'ok',
                 clearText: 'reset',
                 icon: 'aa',
@@ -1306,19 +1309,17 @@ describe('abc: table', () => {
             firstCol = comp._columns[0];
             filter = firstCol.filter!;
           });
-          it('should be filter', fakeAsync(() => {
+          it('should be filter', () => {
             expect(context.change).not.toHaveBeenCalled();
             comp._filterConfirm(firstCol);
             expect(context.change).toHaveBeenCalled();
-            discardPeriodicTasks();
-          }));
-          it('should be clean', fakeAsync(() => {
+          });
+          it('should be clean', () => {
             const m = filter.menus![0];
             expect(m.value).toBe('a');
             context.comp.clearFilter();
             expect(m.value).toBe(undefined);
-            discardPeriodicTasks();
-          }));
+          });
         });
       });
     });
@@ -1354,7 +1355,7 @@ describe('abc: table', () => {
           it('should be sorting', () => {
             fixture.detectChanges();
             comp.sort(comp._columns[0], 0, 'descend');
-            const sortList = comp._columns.filter(item => item._sort && item._sort.enabled && item._sort.default).map(item => item._sort);
+            const sortList = comp._columns.filter(item => item._sort && item._sort.enabled && item._sort.default).map(item => item._sort!);
             expect(sortList.length).toBe(1);
             expect(sortList[0].default).toBe('descend');
           });
@@ -1365,7 +1366,7 @@ describe('abc: table', () => {
             fixture.detectChanges();
             comp.sort(comp._columns[0], 0, 'descend');
             comp.sort(comp._columns[1], 0, 'ascend');
-            const sortList = comp._columns.filter(item => item._sort && item._sort.enabled && item._sort.default).map(item => item._sort);
+            const sortList = comp._columns.filter(item => item._sort && item._sort.enabled && item._sort.default).map(item => item._sort!);
             expect(sortList.length).toBe(2);
             expect(sortList[0].default).toBe('descend');
             expect(sortList[1].default).toBe('ascend');
@@ -1394,14 +1395,13 @@ describe('abc: table', () => {
         expect(page._changeData.type).toBe('dblClick');
       }));
       it('should be ingore input', fakeAsync(() => {
-        expect(context.change).not.toHaveBeenCalled();
         const el = page.getCell() as HTMLElement;
         // mock input nodeName
         spyOnProperty(el, 'nodeName', 'get').and.returnValue('INPUT');
         el.click();
         fixture.detectChanges();
         tick(100);
-        expect(context.change).not.toHaveBeenCalled();
+        page.expectChangeType('click', false);
       }));
     });
     describe('[public method]', () => {
@@ -1531,6 +1531,8 @@ describe('abc: table', () => {
             page.expectCurrentPageTotal(PS);
             comp.removeRow(comp._data[0]);
             page.expectCurrentPageTotal(PS - 1);
+            comp.removeRow(1);
+            page.expectCurrentPageTotal(PS - 2);
             done();
           });
         });
@@ -1549,6 +1551,17 @@ describe('abc: table', () => {
             page.expectCurrentPageTotal(PS);
             comp.removeRow([null]);
             page.expectCurrentPageTotal(PS);
+            done();
+          });
+        });
+      });
+      describe('#setRow', () => {
+        it('should be working', done => {
+          fixture.detectChanges();
+          fixture.whenStable().then(() => {
+            page.expectData(1, 'name', `name 1`);
+            comp.setRow(0, { name: 'new name' });
+            page.expectData(1, 'name', `new name`);
             done();
           });
         });
@@ -1643,6 +1656,20 @@ describe('abc: table', () => {
             expect(list.length).toBe(DEFAULTCOUNT);
             done();
           });
+        });
+      });
+      it('#count', done => {
+        fixture.detectChanges();
+        fixture.whenStable().then(() => {
+          expect(comp.count).toBe(PS);
+          done();
+        });
+      });
+      it('#list', done => {
+        fixture.detectChanges();
+        fixture.whenStable().then(() => {
+          expect(comp.list.length).toBe(PS);
+          done();
         });
       });
       it('#cdkVirtualScrollViewport', done => {
@@ -2013,7 +2040,10 @@ describe('abc: table', () => {
     }
     /** 断言组件内 `_columns` 值 */
     expectColumn(title: string, path: string, valule: any): this {
-      const ret = deepGet(comp._columns.find(w => (w.title as STColumnTitle).text === title), path);
+      const ret = deepGet(
+        comp._columns.find(w => (w.title as STColumnTitle).text === title),
+        path,
+      );
       expect(ret).toBe(valule);
       return this;
     }
@@ -2070,6 +2100,15 @@ describe('abc: table', () => {
         expect(el!.textContent!.trim()).toBe(content, expectationFailOutput);
       }
       return this;
+    }
+    expectChangeType(type: STChangeType, called = true) {
+      const callAll = this.changeSpy.calls.all();
+      const args = callAll[callAll.length - 1].args[0];
+      if (called) {
+        expect(args.type).toBe(type);
+      } else {
+        expect(args.type).not.toBe(type);
+      }
     }
     openDropDownInHead(nams: string): this {
       dispatchDropDown(dl.query(By.css(`.ant-table-thead th[data-col="${nams}"]`)), 'click');

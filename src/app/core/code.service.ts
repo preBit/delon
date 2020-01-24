@@ -226,7 +226,7 @@ export function StartupServiceFactory(startupService: StartupService): Function 
 }
 
 import { VERSION as VERSION_ALAIN } from '@delon/theme';
-import { VERSION as VERSION_ZORRO } from 'ng-zorro-antd';
+import { VERSION as VERSION_ZORRO } from 'ng-zorro-antd/version';
 import { ${componentName} } from './app.component';
 
 @NgModule({
@@ -241,7 +241,7 @@ imports: [
     AlainThemeModule.forRoot(),
     DelonABCModule,
     DelonChartModule,
-    DelonACLModule,
+    DelonACLModule.forRoot(),
     DelonCacheModule,
     DelonUtilModule,
     DelonAuthModule,
@@ -271,7 +271,7 @@ export class AppModule {
 }
   `,
           'src/styles.less': ``,
-          '_mock/user.ts': require('!!raw-loader!../../../_mock/user.ts'),
+          '_mock/user.ts': require('!!raw-loader!../../../_mock/user.ts').default,
           '_mock/index.ts': `export * from './user';`,
         },
         template: 'angular-cli',
@@ -286,7 +286,7 @@ export class AppModule {
           '@angular/router': '*',
           '@angular/animations': '*',
           '@ant-design/icons-angular': '*',
-          'date-fns': '*',
+          'date-fns': '^1.30.1',
           'file-saver': '^1.3.3',
           'ngx-countdown': '*',
           'ng-zorro-antd': '*',

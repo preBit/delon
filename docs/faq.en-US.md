@@ -12,7 +12,7 @@ Please check the FAQ below before asking questions.
 
 ### Can't Bind to since it isn't a known property of
 
-When you have multiple lazy modules, you want each submodule to use the component library (for example: `NgZorroAntdModule`, `NgxTinymceModule`) should be exported in `ShareModule`, please refer to [module registration guidelines](/docs/ Module).
+When you have multiple lazy modules, you want each submodule to use the component library (for example: `NgZorroAntdModule`, `NgxTinymceModule`) should be exported in `ShareModule`, please refer to [module registration guidelines](/docs/Module).
 
 ### Expression Changed After It Has Been Checked Error
 
@@ -112,3 +112,13 @@ Finally, redefine the new path in `src/styles/theme.less`:
 ### Missing locale data for the locale "zh-cn"
 
 For missing language imports, refer to [app.module.ts](https://github.com/ng-alain/ng-alain/blob/master/src/app/app.module.ts#L6-L25).
+
+### How to deploy ng-alain.com documentation site in local
+
+We provided an online snapshot:
+
+```barsh
+git clone --depth 1 --branch gh-pages https://github.com/ng-alain/delon.git docs
+```
+
+You can simply create a Docker container to quickly deploy the same documentation site as ng-alain.com.

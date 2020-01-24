@@ -43,6 +43,27 @@ const MOCKMENUS = [
   },
 ] as Nav[];
 
+const MOCKOPENSTRICTLY = [
+  {
+    text: '',
+    group: true,
+    children: [
+      {
+        text: '',
+        link: '/v1',
+        open: true,
+        children: [{ text: '' }],
+      },
+      {
+        text: '',
+        link: '/v1',
+        open: true,
+        children: [{ text: '' }],
+      },
+    ],
+  },
+] as Nav[];
+
 class MockACLService {
   can(val: string) {
     return val === 'admin';
@@ -182,6 +203,14 @@ describe('abc: sidebar-nav', () => {
         fixture.detectChanges();
         expect(context.select).toHaveBeenCalled();
       });
+
+      it('should be support html in text or i18n', () => {
+        createComp();
+        menuSrv.add([{ text: 'text <strong>1</strong>' }]);
+        page.checkText('.sidebar-nav__item', `text 1`);
+        menuSrv.add([{ i18n: 'i18n <strong>1</strong>' }]);
+        page.checkText('.sidebar-nav__item', `i18n 1`);
+      });
     });
 
     describe('#icon', () => {
@@ -300,6 +329,25 @@ describe('abc: sidebar-nav', () => {
           fixture.detectChanges();
           expect(router.navigateByUrl).not.toHaveBeenCalled();
         });
+        it('muse be hide via click span of menu item', () => {
+          createComp();
+          setSrv.layout.collapsed = true;
+          fixture.detectChanges();
+          page.showSubMenu();
+          const containerEl = page.getEl<HTMLElement>(floatingShowCls, true);
+          containerEl!.querySelectorAll('span')[1].click();
+          fixture.detectChanges();
+          expect(router.navigateByUrl).toHaveBeenCalled();
+        });
+        it('muse be hide via document click', () => {
+          createComp();
+          setSrv.layout.collapsed = true;
+          fixture.detectChanges();
+          page.showSubMenu();
+          document.dispatchEvent(new MouseEvent('click'));
+          fixture.detectChanges();
+          expect(router.navigateByUrl).not.toHaveBeenCalled();
+        });
       });
       it('#52', () => {
         createComp();
@@ -342,24 +390,7 @@ describe('abc: sidebar-nav', () => {
         createComp();
         context.openStrictly = true;
         fixture.detectChanges();
-        menuSrv.add([
-          {
-            text: '',
-            group: true,
-            children: [
-              {
-                text: '',
-                open: true,
-                children: [{ text: '' }],
-              },
-              {
-                text: '',
-                open: true,
-                children: [{ text: '' }],
-              },
-            ],
-          },
-        ] as Nav[]);
+        menuSrv.add(deepCopy(MOCKOPENSTRICTLY));
         fixture.detectChanges();
       });
       it('should working', () => {
@@ -451,7 +482,7 @@ describe('abc: sidebar-nav', () => {
         {
           text: '主导航',
           group: true,
-          children: [{ text: 'user', link: '/user' }],
+          children: [{ text: 'user1', link: '/user' }, { text: 'user2', link: '/user' }],
         },
       ]);
     }));
@@ -478,6 +509,15 @@ describe('abc: sidebar-nav', () => {
       tick();
       fixture.detectChanges();
       page.checkCount('.sidebar-nav__selected', 0);
+    }));
+    it('should be ingore _open when enabled openStrictly', fakeAsync(() => {
+      context.openStrictly = true;
+      fixture.detectChanges();
+      menuSrv.add(deepCopy(MOCKOPENSTRICTLY));
+      page.checkCount('.sidebar-nav__open', 2);
+      router.navigateByUrl('/user2');
+      fixture.detectChanges();
+      page.checkCount('.sidebar-nav__open', 2);
     }));
   });
 

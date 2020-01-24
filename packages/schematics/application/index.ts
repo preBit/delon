@@ -279,7 +279,7 @@ function addCliTpl() {
     '__name@dasherize__.component.html': `<page-header></page-header>`,
     '__name@dasherize__.component.ts': `import { Component, OnInit<% if(!!viewEncapsulation) { %>, ViewEncapsulation<% }%><% if(changeDetection !== 'Default') { %>, ChangeDetectionStrategy<% }%> } from '@angular/core';
 import { _HttpClient } from '@delon/theme';
-import { NzMessageService } from 'ng-zorro-antd';
+import { NzMessageService } from 'ng-zorro-antd/message';
 
 @Component({
   selector: '<%= selector %>',
@@ -444,6 +444,12 @@ function installPackages() {
   };
 }
 
+function cnpmTips() {
+  return (_host: Tree) => {
+    console.warn(`Don't use cnpm to install dependencies, pls refer to: https://ng-alain.com/docs/faq#Installation`);
+  };
+}
+
 export default function(options: ApplicationOptions): Rule {
   return (host: Tree, context: SchematicContext) => {
     project = getProject(host, options.project);
@@ -468,6 +474,7 @@ export default function(options: ApplicationOptions): Rule {
       fixVsCode(),
       fixAngularJson(options),
       installPackages(),
+      cnpmTips(),
     ])(host, context);
   };
 }

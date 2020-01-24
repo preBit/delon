@@ -1,4 +1,4 @@
-import { HttpHeaders } from '@angular/common/http';
+import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController, TestRequest } from '@angular/common/http/testing';
 import { Component, DebugElement, ViewChild, Type } from '@angular/core';
 import { ComponentFixture, TestBed, TestBedStatic } from '@angular/core/testing';
@@ -54,6 +54,20 @@ describe('abc: down-file', () => {
         ret.flush(genFile());
         expect(fs.default.saveAs).toHaveBeenCalled();
       });
+    });
+
+    it('should be used custom filename', () => {
+      let fn: string;
+      const filename = 'newfile.docx';
+      spyOn(fs.default, 'saveAs').and.callFake((_body: {}, fileName: string) => (fn = fileName));
+      context.fileName = rep => rep.headers.get('a')!;
+      fixture.detectChanges();
+      (dl.query(By.css('#down-docx')).nativeElement as HTMLButtonElement).click();
+      const ret = httpBed.expectOne(req => req.url.startsWith('/')) as TestRequest;
+      ret.flush(genFile(), {
+        headers: new HttpHeaders({ a: filename }),
+      });
+      expect(fn!).toBe(filename);
     });
 
     it('should be using header filename when repseon has [filename]', () => {
@@ -113,6 +127,13 @@ describe('abc: down-file', () => {
       expect(fs.default.saveAs).not.toHaveBeenCalled();
       expect(context.error).toHaveBeenCalled();
     });
+
+    it('should be request via post', () => {
+      spyOn(fs.default, 'saveAs');
+      (dl.query(By.css('#down-docx')).nativeElement as HTMLButtonElement).click();
+      const ret = httpBed.expectOne(req => req.url.startsWith('/')) as TestRequest;
+      expect(ret.request.body.a).toBe(1);
+    });
   });
 
   it('should be using content-disposition filename', () => {
@@ -150,7 +171,8 @@ describe('abc: down-file', () => {
       id="down-{{ i }}"
       down-file
       [http-data]="data"
-      http-method="get"
+      [http-body]="body"
+      [http-method]="method"
       http-url="/demo.{{ i }}"
       [file-name]="fileName"
       (success)="success()"
@@ -169,7 +191,13 @@ class TestComponent {
     time: new Date(),
   };
 
-  fileName: string | null = 'demo中文';
+  body = {
+    a: 1,
+  };
+
+  method = 'get';
+
+  fileName: string | ((rep: HttpResponse<Blob>) => string) | null = 'demo中文';
 
   success() {}
 

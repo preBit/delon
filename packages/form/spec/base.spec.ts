@@ -150,12 +150,12 @@ export class SFPage {
 
   add(): this {
     this.getEl('.sf__array-add button').click();
-    return this;
+    return this.dc();
   }
   /** 下标从 `1` 开始 */
   remove(index = 1): this {
     this.getEl(`.sf__array-container [data-index="${index - 1}"] .sf__array-remove`).click();
-    return this;
+    return this.dc();
   }
 
   newSchema(schema: SFSchema, ui?: SFUISchema, formData?: any): this {
@@ -333,6 +333,8 @@ export class SFPage {
       [onlyVisual]="onlyVisual"
       [disabled]="disabled"
       [loading]="loading"
+      [noColon]="noColon"
+      [cleanValue]="cleanValue"
       (formChange)="formChange($event)"
       (formSubmit)="formSubmit($event)"
       (formReset)="formReset($event)"
@@ -354,6 +356,8 @@ export class TestFormComponent {
   onlyVisual = false;
   disabled = false;
   loading = false;
+  noColon = false;
+  cleanValue = false;
 
   formChange() {}
   formSubmit() {}

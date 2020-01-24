@@ -424,6 +424,43 @@ describe('form: component', () => {
         page.checkCount(CLS.disabled, 1);
       });
 
+      it('#noColon', () => {
+        context.noColon = true;
+        fixture.detectChanges();
+        const CLS = `.sf__no-colon`;
+        page.checkCount(CLS, 1);
+        context.noColon = false;
+        fixture.detectChanges();
+        page.checkCount(CLS, 0);
+      });
+
+      describe('#cleanValue', () => {
+        it('with true', () => {
+          context.cleanValue = true;
+          fixture.detectChanges();
+          page.newSchema(
+            {
+              properties: { name: { type: 'string' } },
+            },
+            {},
+            { name: 'a', age: 10 },
+          );
+          expect(context.comp.value.age == null).toBe(true);
+        });
+        it('with false', () => {
+          context.cleanValue = false;
+          fixture.detectChanges();
+          page.newSchema(
+            {
+              properties: { name: { type: 'string' } },
+            },
+            {},
+            { name: 'a', age: 10 },
+          );
+          expect(context.comp.value.age).toBe(10);
+        });
+      });
+
       it('#formChange', () => {
         page.setValue('/name', 'cipchk');
         expect(context.formChange).toHaveBeenCalled();
